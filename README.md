@@ -22,29 +22,6 @@ CasaFind PH is a responsive, user-friendly platform that connects property buyer
 - **Icons:** Lucide React  
 - **Fonts:** Plus Jakarta Sans  
 
-## Project Structure
-
-src/
-├── assets/ # Images, logos, static assets
-├── components/ # Reusable UI components
-│ ├── ui/ # shadcn/ui base components
-│ ├── Header.tsx # Navigation header
-│ ├── Footer.tsx # Site footer
-│ ├── SearchBar.tsx
-│ ├── PropertyCard.tsx
-│ ├── FeaturedProperties.tsx
-│ ├── PopularLocations.tsx
-│ ├── WhyChooseUs.tsx
-│ └── CTASection.tsx
-├── hooks/ # Custom React hooks
-├── lib/ # Utility functions
-├── pages/ # Page components
-│ ├── Index.tsx # Home page
-│ └── NotFound.tsx # 404 page
-├── App.tsx # Main app component
-├── main.tsx # Application entry point
-└── index.css # Global styles and design tokens
-
 ## Getting Started
 
 ### Prerequisites
@@ -54,8 +31,7 @@ src/
 ### Installation
 1. Clone the repository:  
 ```bash
-git clone <YOUR_REPOSITORY_URL>
-cd casafind-ph
+git clone <REPOSITORY_URL>
 
 Install dependencies:
 
