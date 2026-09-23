@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -8,10 +7,9 @@ import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import PropertyFormDialog from "./PropertyFormDialog";
-import type { Database } from "@/integrations/supabase/types";
+import { listProperties, deleteProperty, type ApiProperty } from "@/lib/propertiesApi";
 
-type Property = Database["public"]["Tables"]["properties"]["Row"];
-type PropertyInsert = Database["public"]["Tables"]["properties"]["Insert"];
+type Property = ApiProperty;
 
 const PropertiesTable = () => {
   const queryClient = useQueryClient();
@@ -21,18 +19,11 @@ const PropertiesTable = () => {
 
   const { data: properties, isLoading } = useQuery({
     queryKey: ["properties"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("properties").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: listProperties,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("properties").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => deleteProperty(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       toast.success("Property deleted");
@@ -87,15 +78,14 @@ const PropertiesTable = () => {
               <TableHead className="text-center">Bath</TableHead>
               <TableHead className="text-center">Parking</TableHead>
               <TableHead>Size</TableHead>
-              <TableHead>Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : filteredProperties?.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">{search ? "No matching properties" : "No properties yet"}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{search ? "No matching properties" : "No properties yet"}</TableCell></TableRow>
             ) : (
               filteredProperties?.map((p) => (
                 <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
@@ -112,9 +102,6 @@ const PropertiesTable = () => {
                   <TableCell className="text-sm">
                     {p.property_size ? `${p.property_size} sqm` : "—"}
                     {p.lot_size ? ` / ${p.lot_size} sqm lot` : ""}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(p.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">

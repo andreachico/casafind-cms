@@ -8,10 +8,23 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+// Fall back to harmless placeholder values so the app still renders (instead of
+// crashing to a white screen) when env vars are missing. Data calls will fail
+// until VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY are set in .env.
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.error(
+    'Missing Supabase env vars. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in CasaFindCMS/.env'
+  );
+}
+
+export const supabase = createClient<Database>(
+  SUPABASE_URL || 'http://localhost:54321',
+  SUPABASE_PUBLISHABLE_KEY || 'public-anon-key-placeholder',
+  {
+    auth: {
+      storage: localStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+    },
   }
-});
+);

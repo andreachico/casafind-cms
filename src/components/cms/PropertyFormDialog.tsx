@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import type { Database } from "@/integrations/supabase/types";
+import { createProperty, updateProperty, type ApiProperty } from "@/lib/propertiesApi";
 
-type Property = Database["public"]["Tables"]["properties"]["Row"];
+type Property = ApiProperty;
 
 interface Props {
   open: boolean;
@@ -79,12 +78,21 @@ const PropertyFormDialog = ({ open, onOpenChange, property }: Props) => {
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
+      const payload = {
+        title: data.title,
+        description: data.description,
+        listing_type: data.listing_type,
+        price: data.price,
+        room_count: data.room_count,
+        bathroom_count: data.bathroom_count,
+        parking_count: data.parking_count,
+        property_size: data.property_size,
+        lot_size: data.lot_size,
+      };
       if (isEditing) {
-        const { error } = await supabase.from("properties").update(data).eq("id", property.id);
-        if (error) throw error;
+        await updateProperty(property.id, payload);
       } else {
-        const { error } = await supabase.from("properties").insert(data);
-        if (error) throw error;
+        await createProperty(payload);
       }
     },
     onSuccess: () => {
