@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { createProperty, updateProperty, type ApiProperty } from "@/lib/propertiesApi";
+import { createProperty, resolveImageUrl, updateProperty, uploadPropertyImage, type ApiProperty } from "@/lib/propertiesApi";
 
 type Property = ApiProperty;
 
@@ -28,11 +28,15 @@ interface FormData {
   parking_count: number;
   property_size: number | null;
   lot_size: number | null;
+  image_url: string;
+  detail_image_url: string;
 }
 
 const PropertyFormDialog = ({ open, onOpenChange, property }: Props) => {
   const queryClient = useQueryClient();
   const isEditing = !!property;
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedDetailFile, setSelectedDetailFile] = useState<File | null>(null);
 
   const { register, handleSubmit, reset, setValue, watch } = useForm<FormData>({
     defaultValues: {
@@ -45,10 +49,15 @@ const PropertyFormDialog = ({ open, onOpenChange, property }: Props) => {
       parking_count: 0,
       property_size: null,
       lot_size: null,
+      image_url: "",
+      detail_image_url: "",
     },
   });
 
   useEffect(() => {
+    setSelectedFile(null);
+    setSelectedDetailFile(null);
+
     if (property) {
       reset({
         title: property.title,
@@ -60,6 +69,8 @@ const PropertyFormDialog = ({ open, onOpenChange, property }: Props) => {
         parking_count: property.parking_count,
         property_size: property.property_size,
         lot_size: property.lot_size,
+        image_url: resolveImageUrl(property.image_url) ?? "",
+        detail_image_url: resolveImageUrl(property.detail_image_url) ?? "",
       });
     } else {
       reset({
@@ -72,12 +83,43 @@ const PropertyFormDialog = ({ open, onOpenChange, property }: Props) => {
         parking_count: 0,
         property_size: null,
         lot_size: null,
+        image_url: "",
+        detail_image_url: "",
       });
     }
   }, [property, reset]);
 
+  const previewUrl = selectedFile
+    ? URL.createObjectURL(selectedFile)
+    : (resolveImageUrl(property?.image_url ?? null) ?? watch("image_url")) || "";
+
+  const detailPreviewUrl = selectedDetailFile
+    ? URL.createObjectURL(selectedDetailFile)
+    : (resolveImageUrl(property?.detail_image_url ?? null) ?? watch("detail_image_url")) || "";
+
+  const handleRemoveImage = () => {
+    setSelectedFile(null);
+    setValue("image_url", "");
+  };
+
+  const handleRemoveDetailImage = () => {
+    setSelectedDetailFile(null);
+    setValue("detail_image_url", "");
+  };
+
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
+      let imageUrl = data.image_url.trim() || null;
+      let detailImageUrl = data.detail_image_url.trim() || null;
+
+      if (selectedFile) {
+        imageUrl = await uploadPropertyImage(selectedFile);
+      }
+
+      if (selectedDetailFile) {
+        detailImageUrl = await uploadPropertyImage(selectedDetailFile);
+      }
+
       const payload = {
         title: data.title,
         description: data.description,
@@ -88,6 +130,8 @@ const PropertyFormDialog = ({ open, onOpenChange, property }: Props) => {
         parking_count: data.parking_count,
         property_size: data.property_size,
         lot_size: data.lot_size,
+        image_url: imageUrl,
+        detail_image_url: detailImageUrl,
       };
       if (isEditing) {
         await updateProperty(property.id, payload);
@@ -158,6 +202,91 @@ const PropertyFormDialog = ({ open, onOpenChange, property }: Props) => {
               <Input id="lot_size" type="number" step="0.01" {...register("lot_size", { valueAsNumber: true, setValueAs: (v) => v === "" || v === 0 ? null : Number(v) })} />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="image_file">Header Image</Label>
+            <Input
+              id="image_file"
+              type="file"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                setSelectedFile(file);
+                if (file) {
+                  setValue("image_url", URL.createObjectURL(file));
+                }
+              }}
+            />
+            {previewUrl ? (
+              <div className="relative overflow-hidden rounded-md border bg-muted/30 p-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="absolute right-3 top-3 z-10 h-7 w-7 rounded-full bg-background/80 text-foreground shadow-sm"
+                  onClick={handleRemoveImage}
+                  aria-label="Remove image"
+                >
+                  ×
+                </Button>
+                <img src={previewUrl} alt="Property preview" className="h-32 w-full rounded object-cover" />
+              </div>
+            ) : null}
+            {(property?.image_url || selectedFile) ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                onClick={handleRemoveImage}
+              >
+                Remove image
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="detail_image_file">View Details Image</Label>
+            <Input
+              id="detail_image_file"
+              type="file"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                setSelectedDetailFile(file);
+                if (file) {
+                  setValue("detail_image_url", URL.createObjectURL(file));
+                }
+              }}
+            />
+            {detailPreviewUrl ? (
+              <div className="relative overflow-hidden rounded-md border bg-muted/30 p-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="absolute right-3 top-3 z-10 h-7 w-7 rounded-full bg-background/80 text-foreground shadow-sm"
+                  onClick={handleRemoveDetailImage}
+                  aria-label="Remove detail image"
+                >
+                  ×
+                </Button>
+                <img src={detailPreviewUrl} alt="Property detail preview" className="h-32 w-full rounded object-cover" />
+              </div>
+            ) : null}
+            {(property?.detail_image_url || selectedDetailFile) ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                onClick={handleRemoveDetailImage}
+              >
+                Remove detail image
+              </Button>
+            ) : null}
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={mutation.isPending}>

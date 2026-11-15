@@ -71,6 +71,7 @@ const PropertiesTable = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
+              <TableHead className="w-20">Header Image</TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Price</TableHead>
@@ -83,12 +84,19 @@ const PropertiesTable = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : filteredProperties?.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{search ? "No matching properties" : "No properties yet"}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">{search ? "No matching properties" : "No properties yet"}</TableCell></TableRow>
             ) : (
               filteredProperties?.map((p) => (
                 <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
+                  <TableCell className="py-3">
+                    {p.image_url ? (
+                      <img src={p.image_url} alt={p.title} className="h-12 w-16 rounded object-cover border" />
+                    ) : (
+                      <div className="flex h-12 w-16 items-center justify-center rounded border border-dashed text-[10px] text-muted-foreground">No image</div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium max-w-[200px] truncate">{p.title}</TableCell>
                   <TableCell>
                     <Badge variant={p.listing_type === "sale" ? "default" : "secondary"}>
