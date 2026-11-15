@@ -1,10 +1,14 @@
-import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Users } from "lucide-react";
 import PropertiesTable from "@/components/cms/PropertiesTable";
 import UsersTable from "@/components/cms/UsersTable";
+import { useAuth } from "@/contexts/AuthContext";
+import { canManageCmsUsers } from "@/lib/roles";
 
 const Index = () => {
+  const { user } = useAuth();
+  const canManageUsers = canManageCmsUsers(user?.role, user?.verified ?? true);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -29,17 +33,21 @@ const Index = () => {
             <TabsTrigger value="properties" className="gap-2">
               <Building2 className="h-4 w-4" /> Properties
             </TabsTrigger>
-            <TabsTrigger value="users" className="gap-2">
-              <Users className="h-4 w-4" /> Users
-            </TabsTrigger>
+            {canManageUsers && (
+              <TabsTrigger value="users" className="gap-2">
+                <Users className="h-4 w-4" /> Users
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="properties">
             <PropertiesTable />
           </TabsContent>
-          <TabsContent value="users">
-            <UsersTable />
-          </TabsContent>
+          {canManageUsers && (
+            <TabsContent value="users">
+              <UsersTable />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
