@@ -14,6 +14,8 @@ export interface ApiProperty {
   parking_count: number;
   property_size: number | null;
   lot_size: number | null;
+  image_url: string | null;
+  detail_image_url: string | null;
 }
 
 async function gql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
@@ -39,11 +41,19 @@ const PROPERTY_FIELDS = `
   parkingCount
   propertySize
   lotSize
+  imageUrl
+  detailImageUrl
 `;
+
+export function resolveImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
 
 type RawProperty = Record<string, unknown>;
 
-function normalize(r: RawProperty): ApiProperty {
+export function normalizeProperty(r: RawProperty): ApiProperty {
   return {
     id: String(r.id),
     title: String(r.title),
@@ -59,6 +69,14 @@ function normalize(r: RawProperty): ApiProperty {
         : Number(r.propertySize),
     lot_size:
       r.lotSize === null || r.lotSize === undefined ? null : Number(r.lotSize),
+    image_url:
+      r.imageUrl === null || r.imageUrl === undefined
+        ? null
+        : resolveImageUrl(String(r.imageUrl)),
+    detail_image_url:
+      r.detailImageUrl === null || r.detailImageUrl === undefined
+        ? null
+        : resolveImageUrl(String(r.detailImageUrl)),
   };
 }
 
@@ -66,7 +84,7 @@ export async function listProperties(): Promise<ApiProperty[]> {
   const data = await gql<{ properties: RawProperty[] }>(
     `query { properties { ${PROPERTY_FIELDS} } }`
   );
-  return (data.properties ?? []).map(normalize);
+  return (data.properties ?? []).map(normalizeProperty);
 }
 
 export interface PropertyInput {
@@ -79,12 +97,14 @@ export interface PropertyInput {
   parking_count: number;
   property_size?: number | null;
   lot_size?: number | null;
+  image_url?: string | null;
+  detail_image_url?: string | null;
 }
 
 export async function createProperty(input: PropertyInput): Promise<ApiProperty> {
   const data = await gql<{ createProperty: RawProperty }>(
-    `mutation Create($title: String!, $description: String, $listingType: String!, $price: Float!, $roomCount: Int!, $bathroomCount: Int!, $parkingCount: Int!, $propertySize: Float, $lotSize: Float) {
-      createProperty(title: $title, description: $description, listingType: $listingType, price: $price, roomCount: $roomCount, bathroomCount: $bathroomCount, parkingCount: $parkingCount, propertySize: $propertySize, lotSize: $lotSize) { ${PROPERTY_FIELDS} }
+    `mutation Create($title: String!, $description: String, $listingType: String!, $price: Float!, $roomCount: Int!, $bathroomCount: Int!, $parkingCount: Int!, $propertySize: Float, $lotSize: Float, $imageUrl: String, $detailImageUrl: String) {
+      createProperty(title: $title, description: $description, listingType: $listingType, price: $price, roomCount: $roomCount, bathroomCount: $bathroomCount, parkingCount: $parkingCount, propertySize: $propertySize, lotSize: $lotSize, imageUrl: $imageUrl, detailImageUrl: $detailImageUrl) { ${PROPERTY_FIELDS} }
     }`,
     {
       title: input.title,
@@ -96,9 +116,11 @@ export async function createProperty(input: PropertyInput): Promise<ApiProperty>
       parkingCount: input.parking_count,
       propertySize: input.property_size ?? null,
       lotSize: input.lot_size ?? null,
+      imageUrl: input.image_url ?? null,
+      detailImageUrl: input.detail_image_url ?? null,
     }
   );
-  return normalize(data.createProperty);
+  return normalizeProperty(data.createProperty);
 }
 
 export async function updateProperty(
@@ -106,8 +128,8 @@ export async function updateProperty(
   input: PropertyInput
 ): Promise<ApiProperty> {
   const data = await gql<{ updateProperty: RawProperty }>(
-    `mutation Update($id: String!, $title: String, $description: String, $listingType: String, $price: Float, $roomCount: Int, $bathroomCount: Int, $parkingCount: Int, $propertySize: Float, $lotSize: Float) {
-      updateProperty(id: $id, title: $title, description: $description, listingType: $listingType, price: $price, roomCount: $roomCount, bathroomCount: $bathroomCount, parkingCount: $parkingCount, propertySize: $propertySize, lotSize: $lotSize) { ${PROPERTY_FIELDS} }
+    `mutation Update($id: String!, $title: String, $description: String, $listingType: String, $price: Float, $roomCount: Int, $bathroomCount: Int, $parkingCount: Int, $propertySize: Float, $lotSize: Float, $imageUrl: String, $detailImageUrl: String) {
+      updateProperty(id: $id, title: $title, description: $description, listingType: $listingType, price: $price, roomCount: $roomCount, bathroomCount: $bathroomCount, parkingCount: $parkingCount, propertySize: $propertySize, lotSize: $lotSize, imageUrl: $imageUrl, detailImageUrl: $detailImageUrl) { ${PROPERTY_FIELDS} }
     }`,
     {
       id,
@@ -120,9 +142,34 @@ export async function updateProperty(
       parkingCount: input.parking_count,
       propertySize: input.property_size ?? null,
       lotSize: input.lot_size ?? null,
+      imageUrl: input.image_url ?? null,
+      detailImageUrl: input.detail_image_url ?? null,
     }
   );
-  return normalize(data.updateProperty);
+  return normalizeProperty(data.updateProperty);
+}
+
+export async function uploadPropertyImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Image upload failed (${res.status})`);
+  }
+
+  const json = (await res.json()) as { url?: string };
+  const url = json.url ?? "";
+
+  if (!url) {
+    throw new Error("Backend did not return an image URL");
+  }
+
+  return resolveImageUrl(url) ?? url;
 }
 
 export async function deleteProperty(id: string): Promise<void> {
