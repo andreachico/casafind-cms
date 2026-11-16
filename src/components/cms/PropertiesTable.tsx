@@ -17,10 +17,12 @@ const PropertiesTable = () => {
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [search, setSearch] = useState("");
 
-  const { data: properties, isLoading } = useQuery({
+  const { data: properties, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["properties"],
     queryFn: listProperties,
   });
+
+  const errorMessage = error instanceof Error ? error.message : "The server could not be reached.";
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteProperty(id),
@@ -54,7 +56,9 @@ const PropertiesTable = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Properties</h2>
-          <p className="text-sm text-muted-foreground">{filteredProperties?.length ?? 0} listings</p>
+          <p className="text-sm text-muted-foreground">
+            {isError ? "Data unavailable" : `${filteredProperties?.length ?? 0} listings`}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -85,6 +89,18 @@ const PropertiesTable = () => {
           <TableBody>
             {isLoading ? (
               <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+            ) : isError ? (
+              <TableRow>
+                <TableCell colSpan={9} className="py-8 text-center">
+                  <div className="space-y-3">
+                    <p className="font-medium text-destructive">Failed to load properties</p>
+                    <p className="text-sm text-muted-foreground">{errorMessage}</p>
+                    <Button variant="outline" size="sm" onClick={() => void refetch()}>
+                      Retry
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : filteredProperties?.length === 0 ? (
               <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">{search ? "No matching properties" : "No properties yet"}</TableCell></TableRow>
             ) : (
