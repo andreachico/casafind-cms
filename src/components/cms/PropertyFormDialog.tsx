@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { createProperty, resolveImageUrl, updateProperty, uploadPropertyImage, type ApiProperty } from "@/lib/propertiesApi";
 
+const placeholderImage = "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80";
+
 type Property = ApiProperty;
 
 interface Props {
@@ -229,7 +231,15 @@ const PropertyFormDialog = ({ open, onOpenChange, property }: Props) => {
                 >
                   ×
                 </Button>
-                <img src={previewUrl} alt="Property preview" className="h-32 w-full rounded object-cover" />
+                <img
+                  src={previewUrl}
+                  alt="Property preview"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = placeholderImage;
+                  }}
+                  className="h-32 w-full rounded object-cover"
+                />
               </div>
             ) : null}
             {(property?.image_url || selectedFile) ? (
@@ -271,7 +281,15 @@ const PropertyFormDialog = ({ open, onOpenChange, property }: Props) => {
                 >
                   ×
                 </Button>
-                <img src={detailPreviewUrl} alt="Property detail preview" className="h-32 w-full rounded object-cover" />
+                <img
+                  src={detailPreviewUrl}
+                  alt="Property detail preview"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = placeholderImage;
+                  }}
+                  className="h-32 w-full rounded object-cover"
+                />
               </div>
             ) : null}
             {(property?.detail_image_url || selectedDetailFile) ? (
