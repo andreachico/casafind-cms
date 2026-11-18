@@ -5,6 +5,7 @@ import {
   type AuthUser,
   type RegisterInput,
 } from "@/lib/authApi";
+import { isCmsAccessRole } from "@/lib/roles";
 
 const STORAGE_KEY = "casafind_cms_auth";
 
@@ -18,6 +19,7 @@ interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isLister: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
   register: (input: RegisterInput) => Promise<AuthUser>;
   logout: () => void;
@@ -36,12 +38,22 @@ function readStored(): StoredAuth | null {
 
 // Only staff roles may use the CMS; property seekers are public-site only.
 function assertCmsRole(user: AuthUser): void {
-  if (!["ADMIN", "AGENT", "OWNER"].includes(user.role)) {
-    throw new Error("This account is not allowed to access the CMS.");
+  if (!isCmsAccessRole(user.role)) {
+    throw new Error(
+      "This account is not allowed to access the CMS. Seekers can use the CasaFind website."
+    );
   }
 
-  if (user.role === "ADMIN" && !user.verified) {
-    throw new Error("This admin account is pending verification.");
+  if (user.role === "ADMIN") {
+    if (!user.verified) {
+      throw new Error("This admin account is pending verification.");
+    }
+    return;
+  }
+
+  // Lister-type account (LISTER/AGENT/OWNER).
+  if (!user.verified) {
+    throw new Error("Please verify your email before accessing the CMS.");
   }
 }
 
@@ -78,6 +90,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       token: stored?.token ?? null,
       isAuthenticated: !!stored,
       isAdmin: stored?.user.role === "ADMIN" && stored.user.verified !== false,
+      isLister:
+        !!stored &&
+        stored.user.role !== "ADMIN" &&
+        stored.user.role !== "SEEKER",
       login,
       register,
       logout,
