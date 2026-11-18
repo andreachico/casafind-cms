@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import PropertyEditPage from "./pages/PropertyEditPage";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Index />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/properties/new"
+              element={
+                <ProtectedRoute>
+                  <PropertyEditPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/properties/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <PropertyEditPage />
                 </ProtectedRoute>
               }
             />
