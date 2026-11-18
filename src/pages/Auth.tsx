@@ -17,11 +17,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { UserRole } from "@/lib/authApi";
 
 // Admin accounts are created as pending and must be explicitly verified by an
-// existing CMS admin before they can access the CMS.
+// existing CMS admin before they can access the CMS. Listers must verify their
+// email before they can log in.
 const SIGNUP_ROLES: { value: UserRole; label: string }[] = [
-  { value: "ADMIN", label: "System Administrator (pending verification)" },
-  { value: "AGENT", label: "Real Estate Agent" },
-  { value: "OWNER", label: "Property / Condo Owner" },
+  { value: "ADMIN", label: "Admin (pending verification)" },
+  { value: "LISTER", label: "Lister — Agent / Property Owner" },
 ];
 
 const Auth = () => {
@@ -44,7 +44,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [contactNumber, setContactNumber] = useState("");
-  const [role, setRole] = useState<UserRole>("AGENT");
+  const [role, setRole] = useState<UserRole>("LISTER");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +75,18 @@ const Auth = () => {
       toast.success(`Account created. Welcome, ${user.first_name}!`);
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign up failed");
+      const message = err instanceof Error ? err.message : "Sign up failed";
+      // Unverified listers / pending admins are registered successfully but
+      // cannot access the CMS yet; surface a clear informational message
+      // instead of a generic error and send them back to the login tab.
+      if (/verify|pending/i.test(message)) {
+        toast.info(
+          "Account created! Please check your email to verify your account before logging in."
+        );
+        setTab("login");
+      } else {
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }
