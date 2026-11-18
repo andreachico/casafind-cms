@@ -4,7 +4,7 @@
 export const API_URL =
   import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:8000";
 
-export type UserRole = "ADMIN" | "AGENT" | "OWNER" | "SEEKER";
+export type UserRole = "ADMIN" | "LISTER" | "SEEKER" | "AGENT" | "OWNER";
 
 export interface AuthUser {
   id: number;
