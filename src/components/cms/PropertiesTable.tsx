@@ -1,20 +1,19 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import PropertyFormDialog from "./PropertyFormDialog";
 import { listProperties, deleteProperty, type ApiProperty } from "@/lib/propertiesApi";
 
 type Property = ApiProperty;
 
 const PropertiesTable = () => {
   const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const { data: properties, isLoading, isError, error, refetch } = useQuery({
@@ -33,15 +32,9 @@ const PropertiesTable = () => {
     onError: () => toast.error("Failed to delete property"),
   });
 
-  const handleEdit = (property: Property) => {
-    setEditingProperty(property);
-    setDialogOpen(true);
-  };
+  const handleEdit = (property: Property) => navigate(`/properties/${property.id}/edit`);
 
-  const handleCreate = () => {
-    setEditingProperty(null);
-    setDialogOpen(true);
-  };
+  const handleCreate = () => navigate("/properties/new");
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(price);
@@ -143,8 +136,6 @@ const PropertiesTable = () => {
           </TableBody>
         </Table>
       </div>
-
-      <PropertyFormDialog open={dialogOpen} onOpenChange={setDialogOpen} property={editingProperty} />
     </div>
   );
 };
