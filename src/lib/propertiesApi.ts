@@ -16,6 +16,9 @@ export interface ApiProperty {
   lot_size: number | null;
   image_url: string | null;
   detail_image_url: string | null;
+  address: string | null;
+  year_built: number | null;
+  furnishing: string | null;
 }
 
 async function gql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
@@ -43,6 +46,9 @@ const PROPERTY_FIELDS = `
   lotSize
   imageUrl
   detailImageUrl
+  address
+  yearBuilt
+  furnishing
 `;
 
 export function resolveImageUrl(url: string | null | undefined): string | null {
@@ -77,6 +83,12 @@ export function normalizeProperty(r: RawProperty): ApiProperty {
       r.detailImageUrl === null || r.detailImageUrl === undefined
         ? null
         : resolveImageUrl(String(r.detailImageUrl)),
+    address: (r.address as string | null) ?? null,
+    year_built:
+      r.yearBuilt === null || r.yearBuilt === undefined
+        ? null
+        : Number(r.yearBuilt),
+    furnishing: (r.furnishing as string | null) ?? null,
   };
 }
 
@@ -99,12 +111,15 @@ export interface PropertyInput {
   lot_size?: number | null;
   image_url?: string | null;
   detail_image_url?: string | null;
+  address?: string | null;
+  year_built?: number | null;
+  furnishing?: string | null;
 }
 
 export async function createProperty(input: PropertyInput): Promise<ApiProperty> {
   const data = await gql<{ createProperty: RawProperty }>(
-    `mutation Create($title: String!, $description: String, $listingType: String!, $price: Float!, $roomCount: Int!, $bathroomCount: Int!, $parkingCount: Int!, $propertySize: Float, $lotSize: Float, $imageUrl: String, $detailImageUrl: String) {
-      createProperty(title: $title, description: $description, listingType: $listingType, price: $price, roomCount: $roomCount, bathroomCount: $bathroomCount, parkingCount: $parkingCount, propertySize: $propertySize, lotSize: $lotSize, imageUrl: $imageUrl, detailImageUrl: $detailImageUrl) { ${PROPERTY_FIELDS} }
+    `mutation Create($title: String!, $description: String, $listingType: String!, $price: Float!, $roomCount: Int!, $bathroomCount: Int!, $parkingCount: Int!, $propertySize: Float, $lotSize: Float, $imageUrl: String, $detailImageUrl: String, $address: String, $yearBuilt: Int, $furnishing: String) {
+      createProperty(title: $title, description: $description, listingType: $listingType, price: $price, roomCount: $roomCount, bathroomCount: $bathroomCount, parkingCount: $parkingCount, propertySize: $propertySize, lotSize: $lotSize, imageUrl: $imageUrl, detailImageUrl: $detailImageUrl, address: $address, yearBuilt: $yearBuilt, furnishing: $furnishing) { ${PROPERTY_FIELDS} }
     }`,
     {
       title: input.title,
@@ -118,6 +133,9 @@ export async function createProperty(input: PropertyInput): Promise<ApiProperty>
       lotSize: input.lot_size ?? null,
       imageUrl: input.image_url ?? null,
       detailImageUrl: input.detail_image_url ?? null,
+      address: input.address ?? null,
+      yearBuilt: input.year_built ?? null,
+      furnishing: input.furnishing ?? null,
     }
   );
   return normalizeProperty(data.createProperty);
@@ -128,8 +146,8 @@ export async function updateProperty(
   input: PropertyInput
 ): Promise<ApiProperty> {
   const data = await gql<{ updateProperty: RawProperty }>(
-    `mutation Update($id: String!, $title: String, $description: String, $listingType: String, $price: Float, $roomCount: Int, $bathroomCount: Int, $parkingCount: Int, $propertySize: Float, $lotSize: Float, $imageUrl: String, $detailImageUrl: String) {
-      updateProperty(id: $id, title: $title, description: $description, listingType: $listingType, price: $price, roomCount: $roomCount, bathroomCount: $bathroomCount, parkingCount: $parkingCount, propertySize: $propertySize, lotSize: $lotSize, imageUrl: $imageUrl, detailImageUrl: $detailImageUrl) { ${PROPERTY_FIELDS} }
+    `mutation Update($id: String!, $title: String, $description: String, $listingType: String, $price: Float, $roomCount: Int, $bathroomCount: Int, $parkingCount: Int, $propertySize: Float, $lotSize: Float, $imageUrl: String, $detailImageUrl: String, $address: String, $yearBuilt: Int, $furnishing: String) {
+      updateProperty(id: $id, title: $title, description: $description, listingType: $listingType, price: $price, roomCount: $roomCount, bathroomCount: $bathroomCount, parkingCount: $parkingCount, propertySize: $propertySize, lotSize: $lotSize, imageUrl: $imageUrl, detailImageUrl: $detailImageUrl, address: $address, yearBuilt: $yearBuilt, furnishing: $furnishing) { ${PROPERTY_FIELDS} }
     }`,
     {
       id,
@@ -144,6 +162,9 @@ export async function updateProperty(
       lotSize: input.lot_size ?? null,
       imageUrl: input.image_url ?? null,
       detailImageUrl: input.detail_image_url ?? null,
+      address: input.address ?? null,
+      yearBuilt: input.year_built ?? null,
+      furnishing: input.furnishing ?? null,
     }
   );
   return normalizeProperty(data.updateProperty);
