@@ -10,10 +10,9 @@ import { toast } from "sonner";
 import { createUser, updateUser, type ApiUser, type UserRole } from "@/lib/usersApi";
 
 const ROLES: { value: UserRole; label: string }[] = [
-  { value: "ADMIN", label: "CMS Administrator" },
-  { value: "AGENT", label: "Real Estate Agent" },
-  { value: "OWNER", label: "Condo/Home Owner" },
-  { value: "SEEKER", label: "Property Seeker" },
+  { value: "ADMIN", label: "Admin" },
+  { value: "LISTER", label: "Lister (Agent / Owner)" },
+  { value: "SEEKER", label: "Seeker" },
 ];
 
 type User = ApiUser;
@@ -44,7 +43,7 @@ const UserFormDialog = ({ open, onOpenChange, user }: Props) => {
       last_name: "",
       email: "",
       password: "",
-      role: "SEEKER",
+      role: "LISTER",
       verified: false,
       contact_number: "",
     },
@@ -57,12 +56,12 @@ const UserFormDialog = ({ open, onOpenChange, user }: Props) => {
         last_name: user.last_name,
         email: user.email,
         password: "",
-        role: user.role,
+        role: user.role === "AGENT" || user.role === "OWNER" ? "LISTER" : user.role,
         verified: user.verified,
         contact_number: user.contact_number || "",
       });
     } else {
-      reset({ first_name: "", last_name: "", email: "", password: "", role: "SEEKER", verified: false, contact_number: "" });
+      reset({ first_name: "", last_name: "", email: "", password: "", role: "LISTER", verified: false, contact_number: "" });
     }
   }, [user, reset]);
 
@@ -75,7 +74,7 @@ const UserFormDialog = ({ open, onOpenChange, user }: Props) => {
           email: data.email,
           password: data.password || null,
           role: data.role,
-          verified: data.role === "ADMIN" ? data.verified : true,
+          verified: (data.role === "ADMIN" || data.role === "LISTER") ? data.verified : true,
           contact_number: data.contact_number || null,
         });
       } else {
@@ -85,7 +84,7 @@ const UserFormDialog = ({ open, onOpenChange, user }: Props) => {
           email: data.email,
           password: data.password,
           role: data.role,
-          verified: data.role === "ADMIN" ? data.verified : true,
+          verified: (data.role === "ADMIN" || data.role === "LISTER") ? data.verified : true,
           contact_number: data.contact_number || null,
         });
       }
@@ -125,8 +124,10 @@ const UserFormDialog = ({ open, onOpenChange, user }: Props) => {
             <Select value={watch("role")} onValueChange={(v) => {
               const nextRole = v as UserRole;
               setValue("role", nextRole);
-              if (nextRole !== "ADMIN") {
+              if (nextRole === "SEEKER") {
                 setValue("verified", true);
+              } else {
+                setValue("verified", false);
               }
             }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -137,7 +138,7 @@ const UserFormDialog = ({ open, onOpenChange, user }: Props) => {
               </SelectContent>
             </Select>
           </div>
-          {watch("role") === "ADMIN" && (
+          {(watch("role") === "ADMIN" || watch("role") === "LISTER") && (
             <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
               <input
                 id="verified"
@@ -146,7 +147,7 @@ const UserFormDialog = ({ open, onOpenChange, user }: Props) => {
                 onChange={(e) => setValue("verified", e.target.checked)}
                 className="h-4 w-4 rounded border-input"
               />
-              <Label htmlFor="verified" className="cursor-pointer">Verified admin account</Label>
+              <Label htmlFor="verified" className="cursor-pointer">Verified account</Label>
             </div>
           )}
           <div>
